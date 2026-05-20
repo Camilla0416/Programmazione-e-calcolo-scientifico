@@ -97,11 +97,11 @@ public:
 };
 
 /* per disegnare il grafo */
-void write_dot(const std::string& filename)
+void write_dot(const unidirected_graph& g, const std::string& filename)
 {
     std::ofstream file(filename);
     file << "graph G {\n";
-    for (auto e:edges()) {
+    for (auto e:g.all_edges()) {
         file << "    " << e.from() << " -- " << e.to() << ";\n";
 	}
     file << "}\n";
