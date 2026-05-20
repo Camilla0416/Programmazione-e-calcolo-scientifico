@@ -1,52 +1,44 @@
 #pragma once
-#include <queue>
-#include <limits> /* per inf */
-#include "weighted_graph.hpp"
-
-/* nodo della priority queue */
-struct pq_node { /* (nodo, distanza_corrente) */
-    int node;
-    double distance;
-	/* voglio distanza minima */
-    bool operator<(const pq_node& other) const {
-        return distance>other.distance;
-    }
-};
+#include <set>
+#include <unordered_map>
+#include <limits> /* per +inf */
+#include "unidirected_graph.hpp"
 
 /* risultato finale */
 struct dijkstra_result {
-    std::unordered_map<int,int> pred; /* predecessori */
-    std::unordered_map<int,double> dist; /* distanze minime */
+    std::unordered_map<int,int> dist; /* distanza */
+	std::unordered_map<int,int> pred; /* predecessori */
 };
 
-dijkstra_result dijkstra(const weighted_graph& graph, int source) {
+dijkstra_result dijkstra(const unidirected_graph& graph, int source) {
     dijkstra_result result;
     /* Inizializzo i nodi */
     for (int node:graph.all_nodes()) {
-        result.pred[node]=-1; /* pred[i]=-1 (non conosco ancora) */
-        result.dist[node]=std::numeric_limits<double>::infinity(); /* dist[i]=inf (non conosco ancora) */
+        result.dist[node]=std::numeric_limits<int>::max(); /* dist[i]=+inf */
+		result.pred[node]=-1; /* pred[i]=-1 */
     }
     result.dist[source]=0; /* sorgente */
-    std::priority_queue<pq_node> pq; /* min priority queue */
-    pq.push({source,0}); /* PQ.Enqueue() */
+	result.pred[source]=source;
+	/* set ordinato: (distanza,nodo) */
+	std::set<std::pair<int,int>> pq;
+	pq.insert({0,source}); /* PQ.Enqueue() */
     while (!pq.empty()) {
-        pq_node current=pq.top(); /* PQ.Dequeue() --> min nodo */
-        pq.pop(); /* PQ.Dequeue() */
-        int u=current.node;
-        double d=current.distance;
-        if (d>result.dist[u]) { /* sostituisce DecreaseKey */
-            continue;
-        }
-        /* espoloro i vicini: foreach(v in Adj[u]) */
-        auto neighs=graph.neighbours(u);
-        for (auto neigh:neighs) {
-            int v=neigh.first; /* vicino */
-            double weight=neigh.second; /* peso arco */
-            if (result.dist[v]>result.dist[u]+weight) {
-				result.dist[v]=result.dist[u]+weight;
-                result.pred[v]=u;
-                /* DecreaseKey: reinserisco il nodo con nuova priorità */
-                pq.push({v,result.dist[v]});
+        /* PQ.Dequeue() */
+		auto current=*pq.begin(); /* nodo con distanza minima */
+		pq.erase(pq.begin());
+		int dist_u=current.first;
+        int u=current.second;
+		for (int v:graph.neighbours(u)) {
+            int new_dist=result.dist[u]+1;
+            if (new_dist<result.dist[v]) {
+				/* se il nodo è gia nella coda, rimuovo la vecchua dist */
+				if (result.dist[v] != std::numeric_limits<int>::max()) {
+					pq.erase({result.dist[v],v}); /* Decreasekey */
+				}
+				result.dist[v]=new_dist;
+				result.pred[v]=u;
+				/* DecreaseKey: reinserisco il nodo con nuova priorità */
+				pq.insert({new_dist,v});
             }
         }
     }
